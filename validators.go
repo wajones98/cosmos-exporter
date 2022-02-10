@@ -149,10 +149,19 @@ func ValidatorsHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Cl
 			Float64("request-time", time.Since(queryStart).Seconds()).
 			Msg("Finished querying validators")
 		validators = validatorsResponse.Validators
-
 		// sorting by delegator shares to display rankings
 		sort.Slice(validators, func(i, j int) bool {
-			return validators[i].DelegatorShares.RoundInt64() > validators[j].DelegatorShares.RoundInt64()
+			firstShares, firstErr := strconv.ParseFloat(validators[i].DelegatorShares.String(), 64)
+			secondShares, secondErr := strconv.ParseFloat(validators[j].DelegatorShares.String(), 64)
+
+			if firstErr != nil || secondErr != nil {
+				sublogger.Error().
+					Err(err).
+					Msg("Error converting delegator shares for sorting")
+				return true
+			}
+
+			return firstShares > secondShares
 		})
 	}()
 	wg.Add(1)
@@ -249,11 +258,24 @@ func ValidatorsHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Cl
 			"moniker": validator.Description.Moniker,
 		}).Set(jailed)
 
-		validatorsTokensGauge.With(prometheus.Labels{
-			"address": validator.OperatorAddress,
-			"moniker": validator.Description.Moniker,
-			"denom":   Denom,
-		}).Set(float64(validator.Tokens.Int64()) / DenomCoefficient)
+		// validatorsTokensGauge.With(prometheus.Labels{
+		// 	"address": validator.OperatorAddress,
+		// 	"moniker": validator.Description.Moniker,
+		// 	"denom":   Denom,
+		// }).Set(float64(validator.Tokens.Int64()) / DenomCoefficient)
+
+		if value, err := strconv.ParseFloat(validator.Tokens.String(), 64); err != nil {
+			sublogger.Error().
+				Str("address", validator.OperatorAddress).
+				Err(err).
+				Msg("Could not parse validator tokens")
+		} else {
+			validatorsTokensGauge.With(prometheus.Labels{
+				"address": validator.OperatorAddress,
+				"moniker": validator.Description.Moniker,
+				"denom":   Denom,
+			}).Set(value / DenomCoefficient)
+		}
 
 		// because cosmos's dec doesn't have .toFloat64() method or whatever and returns everything as int
 		if value, err := strconv.ParseFloat(validator.DelegatorShares.String(), 64); err != nil {
@@ -269,11 +291,24 @@ func ValidatorsHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Cl
 			}).Set(value / DenomCoefficient)
 		}
 
-		validatorsMinSelfDelegationGauge.With(prometheus.Labels{
-			"address": validator.OperatorAddress,
-			"moniker": validator.Description.Moniker,
-			"denom":   Denom,
-		}).Set(float64(validator.MinSelfDelegation.Int64()) / DenomCoefficient)
+		// validatorsMinSelfDelegationGauge.With(prometheus.Labels{
+		// 	"address": validator.OperatorAddress,
+		// 	"moniker": validator.Description.Moniker,
+		// 	"denom":   Denom,
+		// }).Set(float64(validator.MinSelfDelegation.Int64()) / DenomCoefficient)
+
+		if value, err := strconv.ParseFloat(validator.MinSelfDelegation.String(), 64); err != nil {
+			sublogger.Error().
+				Str("address", validator.OperatorAddress).
+				Err(err).
+				Msg("Could not parse validator tokens")
+		} else {
+			validatorsMinSelfDelegationGauge.With(prometheus.Labels{
+				"address": validator.OperatorAddress,
+				"moniker": validator.Description.Moniker,
+				"denom":   Denom,
+			}).Set(value / DenomCoefficient)
+		}
 
 		err = validator.UnpackInterfaces(interfaceRegistry) // Unpack interfaces, to populate the Anys' cached values
 		if err != nil {

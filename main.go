@@ -20,12 +20,15 @@ import (
 var (
 	ConfigPath string
 
-	Denom         string
-	ListenAddress string
-	NodeAddress   string
-	TendermintRPC string
-	LogLevel      string
-	Limit         uint64
+	Denom              string
+	ListenAddress      string
+	NodeAddress        string
+	TendermintRPC      string
+	EthRPC             string
+	ethTokenContract   string
+	ethGravityContract string
+	LogLevel           string
+	Limit              uint64
 
 	Prefix                    string
 	AccountPrefix             string
@@ -135,6 +138,9 @@ func Execute(cmd *cobra.Command, args []string) {
 		Str("--denom", Denom).
 		Str("--listen-address", ListenAddress).
 		Str("--node", NodeAddress).
+		Str("--eth-node", EthRPC).
+		Str("--eth-token-contract", ethTokenContract).
+		Str("--eth-gravity-contract", ethGravityContract).
 		Str("--log-level", LogLevel).
 		Msg("Started with following parameters")
 
@@ -173,6 +179,14 @@ func Execute(cmd *cobra.Command, args []string) {
 
 	http.HandleFunc("/metrics/general", func(w http.ResponseWriter, r *http.Request) {
 		GeneralHandler(w, r, grpcConn)
+	})
+
+	http.HandleFunc("/metrics/gravity-bridge/wallet", func(w http.ResponseWriter, r *http.Request) {
+		GravityBridgeWalletHandler(w, r, grpcConn)
+	})
+
+	http.HandleFunc("/metrics/gravity-bridge/contract", func(w http.ResponseWriter, r *http.Request) {
+		GravityBridgeContractHandler(w, r, grpcConn)
 	})
 
 	log.Info().Str("address", ListenAddress).Msg("Listening")
@@ -256,6 +270,9 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&LogLevel, "log-level", "info", "Logging level")
 	rootCmd.PersistentFlags().Uint64Var(&Limit, "limit", 1000, "Pagination limit for gRPC requests")
 	rootCmd.PersistentFlags().StringVar(&TendermintRPC, "tendermint-rpc", "http://localhost:26657", "Tendermint RPC address")
+	rootCmd.PersistentFlags().StringVar(&EthRPC, "eth-rpc", "http://localhost:8545", "Ethereum RPC address")
+	rootCmd.PersistentFlags().StringVar(&ethTokenContract, "eth-token-contract", "", "Ethereum token contract")
+	rootCmd.PersistentFlags().StringVar(&ethGravityContract, "eth-gravity-contract", "", "Ethereum gravity contract")
 
 	// some networks, like Iris, have the different prefixes for address, validator and consensus node
 	rootCmd.PersistentFlags().StringVar(&Prefix, "bech-prefix", "persistence", "Bech32 global prefix")

@@ -64,9 +64,19 @@ func GravityBridgeWalletHandler(w http.ResponseWriter, r *http.Request, grpcConn
 		[]string{"cudos_orchestrator_address", "ethereum_orchestrator_address"},
 	)
 
+	gravEthOrchERC20BalanceGauge := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:        "gravity_ethereum_orchestrator_erc20_balance",
+			Help:        "ERC20 balance of the ethereum orchestrator wallet",
+			ConstLabels: ConstLabels,
+		},
+		[]string{"cudos_orchestrator_address", "ethereum_orchestrator_address"},
+	)
+
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(gravCudoOrchBalanceGauge)
 	registry.MustRegister(gravEthOrchBalanceGauge)
+	registry.MustRegister(gravEthOrchERC20BalanceGauge)
 
 	var wg sync.WaitGroup
 
@@ -130,6 +140,43 @@ func GravityBridgeWalletHandler(w http.ResponseWriter, r *http.Request, grpcConn
 		tokensRatio, _ := ToNativeBalance(ethBal)
 
 		gravEthOrchBalanceGauge.With(prometheus.Labels{
+			"cudos_orchestrator_address":    cudosOrchestratorAddress.String(),
+			"ethereum_orchestrator_address": ethOrchestratorAddress.String(),
+		}).Set(tokensRatio)
+	}()
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		sublogger.Debug().
+			Str("ethereum_orchestrator_address", ethOrchestratorAddress.String()).
+			Msg("Started querying ethereum erc20 wallet balance")
+		queryStart := time.Now()
+
+		ethTokenAddress := common.HexToAddress(ethTokenContract)
+		instance, err := NewMain(ethTokenAddress, ethConn)
+
+		if err != nil {
+			log.Fatal().Err(err).Msg("Could not retreive the token contract")
+		}
+
+		ethBal, err := instance.BalanceOf(&bind.CallOpts{}, ethOrchestratorAddress)
+		if err != nil {
+			sublogger.Error().
+				Str("ethereum_token_address", ethTokenAddress.String()).
+				Err(err).
+				Msg("Could not get ethereum token balance")
+		}
+
+		sublogger.Debug().
+			Str("ethereum_orchestrator_address", ethOrchestratorAddress.String()).
+			Float64("request_time", time.Since(queryStart).Seconds()).
+			Uint64("balance", ethBal.Uint64()).
+			Msg("Finished querying erc20 balance")
+
+		tokensRatio, _ := ToNativeBalance(ethBal)
+
+		gravEthOrchERC20BalanceGauge.With(prometheus.Labels{
 			"cudos_orchestrator_address":    cudosOrchestratorAddress.String(),
 			"ethereum_orchestrator_address": ethOrchestratorAddress.String(),
 		}).Set(tokensRatio)

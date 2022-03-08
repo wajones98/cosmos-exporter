@@ -1,12 +1,12 @@
 Name:         cosmos-exporter
-Version:      1.0
+Version:      %{_versiontag}
 Release:      %{_releasetag}%{?dist}
 Summary:      Cosmos Monitoring Data Exporter
 
 License:      GPL3
 URL:          https://github.com/wajones98/cosmos-exporter           
 
-Source0:      cosmos-exporter-1.0.tar.gz
+Source0:      cosmos-exporter-%{_versiontag}.tar.gz
 
 BuildRequires: golang
 

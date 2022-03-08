@@ -25,8 +25,6 @@ tar xzvf %{SOURCE0}
 %build
 echo -e "\n\n=== build section ===\n\n"
 
-cd CudosNode
-
 export GOPATH="${RPM_BUILD_DIR}/go"
 
 echo -e "\n\n=== Build and install cosmos-exporter ===\n\n"

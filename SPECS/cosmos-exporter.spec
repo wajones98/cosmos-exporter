@@ -31,7 +31,7 @@ echo -e "\n\n=== Build and install cosmos-exporter ===\n\n"
 
 go get github.com/ethereum/go-ethereum/accounts/keystore@v1.10.16
 
-go build -v .
+go install -v .
 
 %install
 echo -e "\n\n=== install section ===\n\n"

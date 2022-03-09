@@ -71,7 +71,7 @@ fi
 /usr/bin/cosmos-exporter
 /usr/lib/systemd/system/*
 %doc
-%defattr(-,cudos,cudos,-)
+%defattr(-,cosmos,cosmos,-)
 %config(noreplace) /var/lib/cosmos/*
 
 %changelog

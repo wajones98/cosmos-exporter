@@ -45,8 +45,8 @@ mkdir -p ${RPM_BUILD_ROOT}/usr/lib/systemd/system
 cp -v ${RPM_BUILD_DIR}/go/bin/main                     ${RPM_BUILD_ROOT}/usr/bin/
 
 # Install the config files
-cp -rv ${RPM_SOURCE_DIR}/dashboards                    ${RPM_BUILD_ROOT}/var/lib/cosmos/
-cp -rv ${RPM_SOURCE_DIR}/images                        ${RPM_BUILD_ROOT}/var/lib/cosmos/
+cp -rv ${RPM_SOURCE_DIR}/../dashboards                 ${RPM_BUILD_ROOT}/var/lib/cosmos/
+cp -rv ${RPM_SOURCE_DIR}/../images                     ${RPM_BUILD_ROOT}/var/lib/cosmos/
 
 # Install systemd service file
 cp ${RPM_SOURCE_DIR}/*.service                         ${RPM_BUILD_ROOT}/usr/lib/systemd/system/

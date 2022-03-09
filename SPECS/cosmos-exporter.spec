@@ -7,6 +7,7 @@ License:      GPL3
 URL:          https://github.com/wajones98/cosmos-exporter           
 
 Source0:      cosmos-exporter-%{_versiontag}.tar.gz
+Source1:      config.json
 
 BuildRequires: golang
 
@@ -45,6 +46,7 @@ mkdir -p ${RPM_BUILD_ROOT}/usr/lib/systemd/system
 cp -v ${RPM_BUILD_DIR}/go/bin/main                     ${RPM_BUILD_ROOT}/usr/bin/cosmos-exporter
 
 # Install the config files
+cp -v  ${RPM_SOURCE_DIR}/config.json                   ${RPM_BUILD_ROOT}/var/lib/cosmos/
 cp -rv ${RPM_SOURCE_DIR}/../dashboards                 ${RPM_BUILD_ROOT}/var/lib/cosmos/
 cp -rv ${RPM_SOURCE_DIR}/../images                     ${RPM_BUILD_ROOT}/var/lib/cosmos/
 

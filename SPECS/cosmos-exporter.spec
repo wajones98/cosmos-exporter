@@ -42,7 +42,7 @@ mkdir -p ${RPM_BUILD_ROOT}/usr/bin/
 mkdir -p ${RPM_BUILD_ROOT}/usr/lib/systemd/system
 
 # Copy the newly built binaries into /usr/bin and /lib64
-cp -v ${RPM_BUILD_DIR}/go/bin/cosmos-exporter          ${RPM_BUILD_ROOT}/usr/bin/
+cp -v ${RPM_BUILD_DIR}/go/bin/main                     ${RPM_BUILD_ROOT}/usr/bin/
 
 # Install the config files
 cp -rv ${RPM_SOURCE_DIR}/dashboards                    ${RPM_BUILD_ROOT}/var/lib/cosmos/

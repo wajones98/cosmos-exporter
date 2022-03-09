@@ -29,6 +29,8 @@ export GOPATH="${RPM_BUILD_DIR}/go"
 
 echo -e "\n\n=== Build and install cosmos-exporter ===\n\n"
 
+go get github.com/ethereum/go-ethereum/accounts/keystore@v1.10.16
+
 go build -v .
 
 %install

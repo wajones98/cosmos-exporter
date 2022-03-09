@@ -55,7 +55,7 @@ cp ${RPM_SOURCE_DIR}/*.service                         ${RPM_BUILD_ROOT}/usr/lib
 # rm -rf $RPM_BUILD_ROOT
 
 %pre
-getent group cosmos >/dev/null || groupadd -r cudos || :
+getent group cosmos >/dev/null || groupadd -r cosmos || :
 getent passwd cosmos >/dev/null || useradd -c "Cosmos Exporter User" -g cosmos -s /bin/bash -r -m -d /var/lib/cosmos cosmos 2> /dev/null || :
 
 %post

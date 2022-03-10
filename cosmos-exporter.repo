@@ -1,5 +1,0 @@
-[cosmos-exporter]
-name=CentOS Stream $releasever - Cudo Cosmos Exporter
-baseurl=http://jenkins.gcp.service.cudo.org/cosmos-exporter
-gpgcheck=0
-enabled=1

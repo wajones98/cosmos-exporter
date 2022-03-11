@@ -30,21 +30,19 @@ func GravityBridgeWalletHandler(w http.ResponseWriter, r *http.Request, grpcConn
 		sublogger.Error().
 			Str("cudos_orchestrator_address", cudosOrchestratorAddressParam).
 			Err(err).
-			Msg("Could not get cosmos address")
+			Msg("Could not get cudos orchestrator address")
 		return
 	}
 
 	ethConn, err := ethclient.Dial(EthRPC)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Could not connect to Ethereum node")
+		sublogger.Error().
+			Err(err).
+			Msg("Could not connect to Ethereum node")
+		return
 	}
-
 	ethOrchestratorAddressParam := r.URL.Query().Get("ethereum_orchestrator_address")
 	ethOrchestratorAddress := common.HexToAddress(ethOrchestratorAddressParam)
-
-	if err != nil {
-		log.Fatal().Err(err).Msg("Could not retreive the token contract")
-	}
 
 	gravCudoOrchBalanceGauge := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -129,6 +127,7 @@ func GravityBridgeWalletHandler(w http.ResponseWriter, r *http.Request, grpcConn
 				Str("ethereum_orchestrator_address", ethOrchestratorAddress.String()).
 				Err(err).
 				Msg("Could not get ethereum balance")
+			return
 		}
 
 		sublogger.Debug().
@@ -157,7 +156,10 @@ func GravityBridgeWalletHandler(w http.ResponseWriter, r *http.Request, grpcConn
 		instance, err := NewMain(ethTokenAddress, ethConn)
 
 		if err != nil {
-			log.Fatal().Err(err).Msg("Could not retreive the token contract")
+			sublogger.Error().
+				Err(err).
+				Msg("Could not retrieve token contract")
+			return
 		}
 
 		ethBal, err := instance.BalanceOf(&bind.CallOpts{}, ethOrchestratorAddress)
@@ -166,6 +168,7 @@ func GravityBridgeWalletHandler(w http.ResponseWriter, r *http.Request, grpcConn
 				Str("ethereum_token_address", ethTokenAddress.String()).
 				Err(err).
 				Msg("Could not get ethereum token balance")
+			return
 		}
 
 		sublogger.Debug().
@@ -203,14 +206,20 @@ func GravityBridgeContractHandler(w http.ResponseWriter, r *http.Request, grpcCo
 
 	ethConn, err := ethclient.Dial(EthRPC)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Could not connect to Ethereum node")
+		sublogger.Error().
+			Err(err).
+			Msg("Could not connect to Ethereum node")
+		return
 	}
 
 	ethTokenAddress := common.HexToAddress(ethTokenContract)
 	instance, err := NewMain(ethTokenAddress, ethConn)
 
 	if err != nil {
-		log.Fatal().Err(err).Msg("Could not retreive the token contract")
+		sublogger.Error().
+			Err(err).
+			Msg("Could not retrieve token contract")
+		return
 	}
 
 	gravEthContractBalanceGauge := prometheus.NewGaugeVec(
@@ -236,6 +245,7 @@ func GravityBridgeContractHandler(w http.ResponseWriter, r *http.Request, grpcCo
 			Str("ethereum_token_address", ethTokenAddress.String()).
 			Err(err).
 			Msg("Could not get ethereum token balance")
+		return
 	}
 
 	sublogger.Debug().

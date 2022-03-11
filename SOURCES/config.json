@@ -1,0 +1,16 @@
+{
+    "bech-account-prefix": "cudos",
+    "bech-account-pubkey-prefix": "cudospub",
+    "bech-consensus-node-prefix": "cudosvalcons",
+    "bech-consensus-node-pubkey-prefix": "cudosvalconspub",
+    "bech-validator-prefix": "cudosvaloper",
+    "bech-validator-pubkey-prefix": "cudosvaloperpub",
+    "log-level":"debug",
+    "tendermint-rpc": "http://34.102.4.198:26657/",
+    "node": "34.102.4.198:9090",
+    "denom": "acudos",
+    "denom-coefficient": "0",
+    "eth-rpc": "http://35.246.5.91:8545/",
+    "eth-token-contract": "0x28ea52f3ee46CaC5a72f72e8B3A387C0291d586d",
+    "eth-gravity-contract": "0xb22F2A4c231e69703FC524Eb2E3eb7B83C316F42"
+}

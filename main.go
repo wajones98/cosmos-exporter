@@ -189,6 +189,10 @@ func Execute(cmd *cobra.Command, args []string) {
 		GravityBridgeContractHandler(w, r, grpcConn)
 	})
 
+	http.HandleFunc("/metrics/status", func(w http.ResponseWriter, r *http.Request) {
+		StatusHandler(w, r, grpcConn)
+	})
+
 	log.Info().Str("address", ListenAddress).Msg("Listening")
 	err = http.ListenAndServe(ListenAddress, nil)
 	if err != nil {

@@ -92,22 +92,20 @@ func StatusHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Client
 		Str("request_id", uuid.New().String()).
 		Logger()
 
-	blockAgeGauge := prometheus.NewGaugeVec(
+	blockAgeGauge := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name:        "block_age",
 			Help:        "Age of the latest block in seconds",
 			ConstLabels: ConstLabels,
 		},
-		[]string{},
 	)
 
-	missingValidatorsGauge := prometheus.NewGaugeVec(
+	missingValidatorsGauge := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name:        "missing_validators",
 			Help:        "Number of missing validators for the latest block",
 			ConstLabels: ConstLabels,
 		},
-		[]string{},
 	)
 
 	registry := prometheus.NewRegistry()
@@ -120,7 +118,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Client
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := setBlockAge(blockAgeGauge, &sublogger)
+		err := setBlockAge(&blockAgeGauge, &sublogger)
 		if err != nil {
 			sublogger.Error().Err(err).Msg("Failed to set block age")
 		}
@@ -129,7 +127,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Client
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := setMissingValidators(missingValidatorsGauge, &sublogger)
+		err := setMissingValidators(&missingValidatorsGauge, &sublogger)
 		if err != nil {
 			sublogger.Error().Err(err).Msg("Failed to set missing validators")
 		}
@@ -146,7 +144,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Client
 		Msg("Request processed")
 }
 
-func setBlockAge(gauge *prometheus.GaugeVec, sublogger *zerolog.Logger) error {
+func setBlockAge(gaugePtr *prometheus.Gauge, sublogger *zerolog.Logger) error {
 	// /status endpoint
 	resp, err := http.Get(TendermintRPC + "/status")
 	if err != nil {
@@ -173,12 +171,13 @@ func setBlockAge(gauge *prometheus.GaugeVec, sublogger *zerolog.Logger) error {
 			Err(err).
 			Msg("Error unmarshalling the status json response")
 	}
+	gauge := *gaugePtr
 
-	gauge.With(prometheus.Labels{}).Set(time.Since(statusResponse.Result.SyncInfo.LatestBlockTime).Seconds())
+	gauge.Set(time.Since(statusResponse.Result.SyncInfo.LatestBlockTime).Seconds())
 	return nil
 }
 
-func setMissingValidators(gauge *prometheus.GaugeVec, sublogger *zerolog.Logger) error {
+func setMissingValidators(gaugePtr *prometheus.Gauge, sublogger *zerolog.Logger) error {
 	resp, err := http.Get(TendermintRPC + "/consensus_state")
 	if err != nil {
 		sublogger.Error().
@@ -214,6 +213,7 @@ func setMissingValidators(gauge *prometheus.GaugeVec, sublogger *zerolog.Logger)
 			Err(err).
 			Msg("Error getting the validators total")
 	}
-	gauge.With(prometheus.Labels{}).Set(float64(validatorsTotal - validatorsSignedCount))
+	gauge := *gaugePtr
+	gauge.Set(float64(validatorsTotal - validatorsSignedCount))
 	return nil
 }

@@ -193,6 +193,10 @@ func Execute(cmd *cobra.Command, args []string) {
 		StatusHandler(w, r, grpcConn)
 	})
 
+	http.HandleFunc("/metrics/osmosis", func(w http.ResponseWriter, r *http.Request) {
+		OsmosisHandler(w, r)
+	})
+
 	log.Info().Str("address", ListenAddress).Msg("Listening")
 	err = http.ListenAndServe(ListenAddress, nil)
 	if err != nil {

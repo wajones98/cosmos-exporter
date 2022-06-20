@@ -123,8 +123,8 @@ func WalletHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Client
 			} else {
 				walletBalanceGauge.With(prometheus.Labels{
 					"address": address,
-					"denom":   Denom,
-				}).Set(value / DenomCoefficient)
+					"denom":   balance.Denom,
+				}).Set(value)
 			}
 		}
 	}()

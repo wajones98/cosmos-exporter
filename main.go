@@ -24,9 +24,11 @@ var (
 	ListenAddress      string
 	NodeAddress        string
 	TendermintRPC      string
+	OsmosisAPI         string
 	EthRPC             string
 	ethTokenContract   string
 	ethGravityContract string
+	OptionalNetworks   map[string]string
 	LogLevel           string
 	Limit              uint64
 
@@ -127,7 +129,7 @@ func Execute(cmd *cobra.Command, args []string) {
 	}
 
 	zerolog.SetGlobalLevel(logLevel)
-
+	fmt.Println(OptionalNetworks["osmosis"])
 	log.Info().
 		Str("--bech-account-prefix", AccountPrefix).
 		Str("--bech-account-pubkey-prefix", AccountPubkeyPrefix).
@@ -148,7 +150,7 @@ func Execute(cmd *cobra.Command, args []string) {
 	config.SetBech32PrefixForAccount(AccountPrefix, AccountPubkeyPrefix)
 	config.SetBech32PrefixForValidator(ValidatorPrefix, ValidatorPubkeyPrefix)
 	config.SetBech32PrefixForConsensusNode(ConsensusNodePrefix, ConsensusNodePubkeyPrefix)
-	config.Seal()
+	// config.Seal()
 
 	grpcConn, err := grpc.Dial(
 		NodeAddress,
@@ -278,6 +280,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&LogLevel, "log-level", "info", "Logging level")
 	rootCmd.PersistentFlags().Uint64Var(&Limit, "limit", 1000, "Pagination limit for gRPC requests")
 	rootCmd.PersistentFlags().StringVar(&TendermintRPC, "tendermint-rpc", "http://localhost:26657", "Tendermint RPC address")
+	rootCmd.PersistentFlags().StringToStringVar(&OptionalNetworks, "optional-networks", nil, "Optional grpc networks")
 	rootCmd.PersistentFlags().StringVar(&EthRPC, "eth-rpc", "http://localhost:8545", "Ethereum RPC address")
 	rootCmd.PersistentFlags().StringVar(&ethTokenContract, "eth-token-contract", "", "Ethereum token contract")
 	rootCmd.PersistentFlags().StringVar(&ethGravityContract, "eth-gravity-contract", "", "Ethereum gravity contract")

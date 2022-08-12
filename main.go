@@ -43,6 +43,8 @@ var (
 	ChainID          string
 	ConstLabels      map[string]string
 	DenomCoefficient float64
+
+	TokenPrices []string
 )
 
 var log = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).With().Timestamp().Logger()
@@ -284,6 +286,7 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&EthRPC, "eth-rpc", "http://localhost:8545", "Ethereum RPC address")
 	rootCmd.PersistentFlags().StringVar(&ethTokenContract, "eth-token-contract", "", "Ethereum token contract")
 	rootCmd.PersistentFlags().StringVar(&ethGravityContract, "eth-gravity-contract", "", "Ethereum gravity contract")
+	rootCmd.PersistentFlags().StringSliceVar(&TokenPrices, "token-prices", nil, "List of CoinGecko token ids to retrieve current prices")
 
 	// some networks, like Iris, have the different prefixes for address, validator and consensus node
 	rootCmd.PersistentFlags().StringVar(&Prefix, "bech-prefix", "persistence", "Bech32 global prefix")

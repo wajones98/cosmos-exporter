@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -57,6 +59,15 @@ func GeneralHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Clien
 		[]string{"denom"},
 	)
 
+	generalTokenPriceGauge := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name:        "cosmos_token_price",
+			Help:        "Token Price",
+			ConstLabels: ConstLabels,
+		},
+		[]string{"token", "currency"},
+	)
+
 	// generalInflationGauge := prometheus.NewGauge(
 	// 	prometheus.GaugeOpts{
 	// 		Name:        "cosmos_general_inflation",
@@ -79,6 +90,7 @@ func GeneralHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Clien
 	registry.MustRegister(generalNotBondedTokensGauge)
 	registry.MustRegister(generalCommunityPoolGauge)
 	registry.MustRegister(generalSupplyTotalGauge)
+	registry.MustRegister(generalTokenPriceGauge)
 	// registry.MustRegister(generalInflationGauge)
 	// registry.MustRegister(generalAnnualProvisions)
 
@@ -187,6 +199,57 @@ func GeneralHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Clien
 				}).Set(value)
 			}
 		}
+	}()
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		sublogger.Debug().Msg("Started querying token prices")
+		queryStart := time.Now()
+
+		for _, token := range TokenPrices {
+			println(token)
+			response, err := http.Get("https://api.coingecko.com/api/v3/coins/" + token)
+
+			if err != nil {
+				sublogger.Error().Err(err).Str("Token", token).Msg("Could not get token price")
+				return
+			}
+
+			var coinGeckoResponse struct {
+				MarketData struct {
+					CurrentPrice struct {
+						Usd float64 `json:"usd"`
+						Gbp float64 `json:"gbp"`
+					} `json:"current_price"`
+				} `json:"market_data"`
+			}
+			responseBytes, err := io.ReadAll(response.Body)
+
+			if err != nil {
+				sublogger.Error().Err(err).Str("Token", token).Msg("Could not read response body")
+				return
+			}
+			err = json.Unmarshal(responseBytes, &coinGeckoResponse)
+			if err != nil {
+				sublogger.Error().Err(err).Str("Token", token).Msg("Could not umarshal json")
+				return
+			}
+
+			generalTokenPriceGauge.With(prometheus.Labels{
+				"token":    token,
+				"currency": "usd",
+			}).Set(coinGeckoResponse.MarketData.CurrentPrice.Usd)
+
+			generalTokenPriceGauge.With(prometheus.Labels{
+				"token":    token,
+				"currency": "gbp",
+			}).Set(coinGeckoResponse.MarketData.CurrentPrice.Gbp)
+		}
+		sublogger.Debug().
+			Float64("request-time", time.Since(queryStart).Seconds()).
+			Msg("Finished querying token prices")
 	}()
 	wg.Add(1)
 	// go func() {

@@ -9,7 +9,6 @@ import (
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
@@ -58,30 +57,30 @@ func GeneralHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Clien
 		[]string{"denom"},
 	)
 
-	generalInflationGauge := prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name:        "cosmos_general_inflation",
-			Help:        "Total supply",
-			ConstLabels: ConstLabels,
-		},
-	)
+	// generalInflationGauge := prometheus.NewGauge(
+	// 	prometheus.GaugeOpts{
+	// 		Name:        "cosmos_general_inflation",
+	// 		Help:        "Total supply",
+	// 		ConstLabels: ConstLabels,
+	// 	},
+	// )
 
-	generalAnnualProvisions := prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name:        "cosmos_general_annual_provisions",
-			Help:        "Annual provisions",
-			ConstLabels: ConstLabels,
-		},
-		[]string{"denom"},
-	)
+	// generalAnnualProvisions := prometheus.NewGaugeVec(
+	// 	prometheus.GaugeOpts{
+	// 		Name:        "cosmos_general_annual_provisions",
+	// 		Help:        "Annual provisions",
+	// 		ConstLabels: ConstLabels,
+	// 	},
+	// 	[]string{"denom"},
+	// )
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(generalBondedTokensGauge)
 	registry.MustRegister(generalNotBondedTokensGauge)
 	registry.MustRegister(generalCommunityPoolGauge)
 	registry.MustRegister(generalSupplyTotalGauge)
-	registry.MustRegister(generalInflationGauge)
-	registry.MustRegister(generalAnnualProvisions)
+	// registry.MustRegister(generalInflationGauge)
+	// registry.MustRegister(generalAnnualProvisions)
 
 	var wg sync.WaitGroup
 
@@ -104,8 +103,22 @@ func GeneralHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Clien
 			Float64("request-time", time.Since(queryStart).Seconds()).
 			Msg("Finished querying staking pool")
 
-		generalBondedTokensGauge.Set(float64(response.Pool.BondedTokens.Int64()))
-		generalNotBondedTokensGauge.Set(float64(response.Pool.NotBondedTokens.Int64()))
+		if value, err := strconv.ParseFloat(response.Pool.BondedTokens.String(), 64); err != nil {
+			sublogger.Error().
+				Err(err).
+				Msg("Could not parse staking pool bonded tokens")
+		} else {
+			generalBondedTokensGauge.Set(value)
+		}
+
+		if value, err := strconv.ParseFloat(response.Pool.NotBondedTokens.String(), 64); err != nil {
+			sublogger.Error().
+				Err(err).
+				Msg("Could not parse staking pool unbonded tokens")
+		} else {
+			generalNotBondedTokensGauge.Set(value)
+		}
+
 	}()
 	wg.Add(1)
 
@@ -164,76 +177,77 @@ func GeneralHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Clien
 		for _, coin := range response.Supply {
 			if value, err := strconv.ParseFloat(coin.Amount.String(), 64); err != nil {
 				sublogger.Error().
+					Str("Denom", coin.Denom).
 					Err(err).
-					Msg("Could not get total supply")
+					Msg("Could not get total supply for coin")
 			} else {
+
 				generalSupplyTotalGauge.With(prometheus.Labels{
-					"denom": Denom,
-				}).Set(value / DenomCoefficient)
+					"denom": coin.Denom,
+				}).Set(value)
 			}
 		}
 	}()
 	wg.Add(1)
+	// go func() {
+	// 	defer wg.Done()
+	// 	sublogger.Debug().Msg("Started querying inflation")
+	// 	queryStart := time.Now()
 
-	go func() {
-		defer wg.Done()
-		sublogger.Debug().Msg("Started querying inflation")
-		queryStart := time.Now()
+	// 	mintClient := minttypes.NewQueryClient(grpcConn)
+	// 	response, err := mintClient.Inflation(
+	// 		context.Background(),
+	// 		&minttypes.QueryInflationRequest{},
+	// 	)
+	// 	if err != nil {
+	// 		sublogger.Error().Err(err).Msg("Could not get inflation")
+	// 		return
+	// 	}
 
-		mintClient := minttypes.NewQueryClient(grpcConn)
-		response, err := mintClient.Inflation(
-			context.Background(),
-			&minttypes.QueryInflationRequest{},
-		)
-		if err != nil {
-			sublogger.Error().Err(err).Msg("Could not get inflation")
-			return
-		}
+	// 	sublogger.Debug().
+	// 		Float64("request-time", time.Since(queryStart).Seconds()).
+	// 		Msg("Finished querying inflation")
 
-		sublogger.Debug().
-			Float64("request-time", time.Since(queryStart).Seconds()).
-			Msg("Finished querying inflation")
+	// 	if value, err := strconv.ParseFloat(response.Inflation.String(), 64); err != nil {
+	// 		sublogger.Error().
+	// 			Err(err).
+	// 			Msg("Could not get inflation")
+	// 	} else {
+	// 		generalInflationGauge.Set(value)
+	// 	}
+	// }()
+	// wg.Add(1)
 
-		if value, err := strconv.ParseFloat(response.Inflation.String(), 64); err != nil {
-			sublogger.Error().
-				Err(err).
-				Msg("Could not get inflation")
-		} else {
-			generalInflationGauge.Set(value)
-		}
-	}()
-	wg.Add(1)
+	// go func() {
+	// 	defer wg.Done()
+	// 	sublogger.Debug().Msg("Started querying annual provisions")
+	// 	queryStart := time.Now()
 
-	go func() {
-		defer wg.Done()
-		sublogger.Debug().Msg("Started querying annual provisions")
-		queryStart := time.Now()
+	// 	mintClient := minttypes.NewQueryClient(grpcConn)
+	// 	response, err := mintClient.AnnualProvisions(
+	// 		context.Background(),
+	// 		&minttypes.QueryAnnualProvisionsRequest{},
+	// 	)
+	// 	if err != nil {
+	// 		sublogger.Error().Err(err).Msg("Could not get annual provisions")
+	// 		return
+	// 	}
 
-		mintClient := minttypes.NewQueryClient(grpcConn)
-		response, err := mintClient.AnnualProvisions(
-			context.Background(),
-			&minttypes.QueryAnnualProvisionsRequest{},
-		)
-		if err != nil {
-			sublogger.Error().Err(err).Msg("Could not get annual provisions")
-			return
-		}
+	// 	sublogger.Debug().
+	// 		Float64("request-time", time.Since(queryStart).Seconds()).
+	// 		Msg("Finished querying annual provisions")
 
-		sublogger.Debug().
-			Float64("request-time", time.Since(queryStart).Seconds()).
-			Msg("Finished querying annual provisions")
-
-		if value, err := strconv.ParseFloat(response.AnnualProvisions.String(), 64); err != nil {
-			sublogger.Error().
-				Err(err).
-				Msg("Could not get annual provisions")
-		} else {
-			generalAnnualProvisions.With(prometheus.Labels{
-				"denom": Denom,
-			}).Set(value / DenomCoefficient)
-		}
-	}()
-	wg.Add(1)
+	// 	if value, err := strconv.ParseFloat(response.AnnualProvisions.String(), 64); err != nil {
+	// 		sublogger.Error().
+	// 			Err(err).
+	// 			Msg("Could not get annual provisions")
+	// 	} else {
+	// 		generalAnnualProvisions.With(prometheus.Labels{
+	// 			"denom": Denom,
+	// 		}).Set(value / DenomCoefficient)
+	// 	}
+	// }()
+	// wg.Add(1)
 
 	wg.Wait()
 

@@ -26,12 +26,6 @@ func WalletHandler(w http.ResponseWriter, r *http.Request, grpcConn *grpc.Client
 		Str("request-id", uuid.New().String()).
 		Logger()
 
-	account := r.URL.Query().Get("account")
-	pubkey := r.URL.Query().Get("pubkey")
-
-	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount(account, pubkey)
-
 	address := r.URL.Query().Get("address")
 	myAddress, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
